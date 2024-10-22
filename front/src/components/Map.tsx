@@ -25,6 +25,8 @@ const Map = () => {
     );
   };
 
+  const tileUrl = "https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=" + import.meta.env.VITE_THUNDERFORESTKEY;
+
   return (
     <div>
       <MapContainer
@@ -34,8 +36,8 @@ const Map = () => {
         style={{ height: 300, width: 800 }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy;<a href="https://www.thunderforest.com"> ThunderForest</a>'
+          url={tileUrl}
         />
         <LocationFinder />
       </MapContainer>
