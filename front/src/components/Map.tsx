@@ -25,7 +25,7 @@ const Map = () => {
     );
   };
 
-  const tileUrl = "https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=" + import.meta.env.VITE_THUNDERFORESTKEY;
+  const tileUrl = "https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=6e5478c8a4f54c779f85573c0e399391";
 
   return (
     <div>
