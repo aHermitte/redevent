@@ -1,17 +1,17 @@
 data = {
-    "Injuries": {
+    "injuries": {
         0: "None",
         1: "Injuries"
     },
-    "Crash hour": list(range(0, 25)),
-    "Report type": {
+    "crash_hour": list(range(0, 25)),
+    "report_type": {
         0: "UNKNOWN",
         1: "ON SCENE",
         2: "NOT ON SCENE (DESK REPORT)"
     },
-    "Num units": list(range(1, 5)),
-    "Posted speed limit": list(range(0, 71)),
-    "Weather condition": {
+    "num_units": list(range(1, 5)),
+    "posted_speed_limit": list(range(0, 71)),
+    "weather_condition": {
         0: "UNKNOWN",
         1: "CLEAR",
         2: "CLOUDY/OVERCAST",
@@ -25,7 +25,7 @@ data = {
         10: "SLEET/HAIL",
         11: "SNOW"
     },
-    "Lighting conditions": {
+    "lighting_conditions": {
         0: "UNKNOWN",
         1: "DARKNESS",
         2: "DARKNESS, LIGHTED ROAD",
@@ -33,7 +33,7 @@ data = {
         4: "DAYLIGHT",
         5: "DUSK"
     },
-    "Roadway surface conditions": {
+    "roadway_surface_conditions": {
         0: "UNKNOWN",
         1: "DRY",
         2: "ICE",
@@ -42,7 +42,7 @@ data = {
         5: "SNOW OR SLUSH",
         6: "WET"
     },
-    "First Crash Type": {
+    "first_crash_type": {
         1: "ANGLE",
         2: "FIXED OBJECT",
         3: "HEAD ON",
@@ -62,7 +62,7 @@ data = {
         17: "TURNING",
         18: "ANIMAL"
     },
-    "Trafficway type": {
+    "trafficway_type": {
         0: "UNKNOWN",
         1: "ALLEY",
         2: "FOUR WAY",
@@ -84,7 +84,7 @@ data = {
         18: "ROUNDABOUT",
         19: "L-INTERSECTION"
     },
-    "Prim contributory cause": {
+    "prim_contributory_cause": {
         1: "TURNING RIGHT ON RED",
         2: "UNABLE TO DETERMINE",
         3: "NOT APPLICABLE",
