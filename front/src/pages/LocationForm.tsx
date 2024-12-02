@@ -12,8 +12,13 @@ const LocationForm = () => {
   const [position, setPosition] = useState(new LatLng(51.505, -0.09));
   const [date, setDate] = useState<Dayjs | null>(null);
   const [time, setTime] = useState<Dayjs | null>(null);
+  const [incidents, setIncidents] = useState<any>([]);
 
-  const sendDatatoBack = async (position: LatLng, date: Dayjs | null, time: Dayjs | null) => {
+  const sendDatatoBack = async (
+    position: LatLng,
+    date: Dayjs | null,
+    time: Dayjs | null,
+  ) => {
     const data = {
       position: {
         latitude: position.lat,
@@ -26,7 +31,6 @@ const LocationForm = () => {
       console.log(data);
       const response = await fetch("http://127.0.0.1:5000/data", {
         method: "POST",
-        mode: "no-cors",
         headers: {
           "Content-Type": "application/json",
         },
@@ -35,11 +39,14 @@ const LocationForm = () => {
 
       if (response.ok) {
         alert("Data sent successfully");
+        response.json().then((data) => {
+          console.log(data);
+          setIncidents(data.incidents);
+        });
       } else {
         const errMsg = await response.text();
         console.log(errMsg);
       }
-
     } catch (error) {
       console.error(error);
     }
@@ -67,7 +74,7 @@ const LocationForm = () => {
       </Grid2>
       <Grid2>
         <Typography variant="h5">Map</Typography>
-        <Map onPositionChange={setPosition} />
+        <Map onPositionChange={setPosition} markedPositions={incidents} />
         <Button
           variant="contained"
           onClick={() => {
