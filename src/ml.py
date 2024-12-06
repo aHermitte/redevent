@@ -34,8 +34,3 @@ history = model.fit(X_train, y_train, epochs=30, batch_size=16, validation_split
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
 print(f"Test Loss: {loss:.4f}")
 print(f"Test Accuracy: {accuracy:.4f}")
-
-
-
-
-
