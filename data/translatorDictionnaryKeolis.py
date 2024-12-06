@@ -1,5 +1,5 @@
 data = {
-    "Conséquences matérielles": {
+    "Conséquences_matérielles": {
         "Sans": 0,
         "Limitées": 1,
         "Importantes": 2,
