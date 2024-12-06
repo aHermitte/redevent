@@ -1,4 +1,7 @@
+from datetime import datetime
 import requests
+from datetime import datetime, timedelta
+
 
 class WeatherAPIcurrent:
     """ Class for fetching weather data from OpenWeatherMap API. """
@@ -35,65 +38,30 @@ class WeatherAPIcurrent:
             return None
 
 
-    def get_weather_at_date(self, latitude, longitude, date):
-        """
-        Get weather data based on latitude and longitude at a specific date (5 days after current date maximum).
 
-        Args:
-        - latitude (float): Latitude coordinate of the location.
-        - longitude (float): Longitude coordinate of the location.
-        - date (string)
+    def get_forecast_at_datetime(self, lat, lon, target_date):
+        url = "https://api.openweathermap.org/data/2.5/forecast"
+        params = {
+            "lat": lat,
+            "lon": lon,
+            "appid": self.api_key,
+            "units": "metric"
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        forecast_data = response.json()
+        
+        #On vérifie d'abord que la date demandée n'est pas dans plus de 5 jours
+        if(target_date > datetime.now() + timedelta(days=5)):
+            return "La date demandée est trop éloignée"
+        
 
-        Returns:
-        - city information + average weather (array): Array containing weather prediction at the date in parameter.
-        """
+        # Filtrer par date et heure dans un intervale de 3h
+        for forecast in forecast_data.get("list", []):
+             forecast_datetime = datetime.strptime(forecast["dt_txt"], "%Y-%m-%d %H:%M:%S")
+             if  forecast_datetime < target_date < (forecast_datetime + timedelta(hours=3)):
+                 return forecast
 
-        weather_data = get_weather(self, latitude, longitude)
-
-        # Get "List" part of the Json
-        forecast_list = weather_data.get("list", [])
-
-        # Convert date to datetime
-        target_date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-
-        # Initialize block before and after the date in parameter
-        before_block = None
-        after_block = None
-
-        # Find those blocks
-        for forecast in forecast_list:
-            forecast_date = datetime.strptime(forecast["dt_txt"], "%Y-%m-%d %H:%M:%S")
-
-            if forecast_date <= target_date:
-                before_block = forecast
-            elif forecast_date > target_date and after_block is None:
-                after_block = forecast
-                break
-
-        if not before_block or not after_block:
-            raise ValueError("Impossible to find blocks before and after the dte in parameter.")
-
-        # Initialize average block
-        averaged_block = {}
-
-        for key in before_block.keys():
-            # Average of numeral values
-            if isinstance(before_block[key], (int, float)) and isinstance(after_block[key], (int, float)):
-                averaged_block[key] = (before_block[key] + after_block[key]) / 2
-            elif isinstance(before_block[key], dict) and isinstance(after_block[key], dict):
-                averaged_block[key] = {
-                    sub_key: (before_block[key][sub_key] + after_block[key][sub_key]) / 2
-                    for sub_key in before_block[key]
-                    if isinstance(before_block[key][sub_key], (int, float)) and isinstance(after_block[key][sub_key], (int, float))
-                }
-            else:
-                # Text values : we keep value of before_block
-                averaged_block[key] = before_block[key]
-
-        # Get city values
-        city_data = weather_data.get("city", {})
-
-        # Return city values and the average block
-        return city_data | averaged_block
+        return None  # Si aucune correspondance n'est trouvée
 
 
