@@ -5,12 +5,32 @@ import sys
 import os
 import matplotlib.pyplot as plt
 from datetime import datetime
+from scipy import stats
+from math import radians, cos, sin, sqrt, atan2
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data.translatorDictionnaryKeolis import data
 
 middle_tram_speed = 30
 
+# Fonction pour calculer la distance entre deux points géographiques (haversine)
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Rayon moyen de la Terre en km
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+
+# Ajout d'un intervalle de confiance
+def confidence_interval(p, n, confidence=0.95):
+    if n == 0:
+        return (0, 0)
+    se = np.sqrt(p * (1 - p) / n)
+    z = stats.norm.ppf((1 + confidence) / 2)
+    lower = max(p - z * se, 0)
+    upper = p + z * se
+    return (lower, upper)
 
 def create_complete_data_csv(): 
 
@@ -102,7 +122,6 @@ def create_complete_data_csv():
 
 # Utiliser la fonction existante pour créer les données
 def prepare_data():
-    # Appel à votre méthode existante
     matrix = create_complete_data_csv()  
 
     # Colonnes correspondantes
@@ -133,15 +152,17 @@ conditions_dist = data["Conditions"].value_counts(normalize=True)
 data['Hour'] = pd.to_datetime(data['Date'], unit='s').dt.hour
 
 # Fonction pour calculer la probabilité d'accident basée sur la condition et l'heure
-def calculate_accident_probability_for_date_and_condition(date_input, condition_input):
+def calculate_accident_probability_for_date_and_condition(date_input, condition_input, lat, lon):
+    nearby_data = data[data.apply(lambda row: haversine(row['Latitude'], row['Longitude'], lat, lon) <= 1, axis=1)]
+
     # Calcul de probabilité basée sur la condition
-    prob_conditions = conditions_dist.get(condition_input, 0.01)
+    prob_conditions = nearby_data['Conditions'].value_counts(normalize=True).get(condition_input, 0.01)
 
     # Extraire l'heure de la date d'entrée
     input_hour = datetime.fromtimestamp(date_input).hour
     
     # Distribution des accidents par heure
-    accidents_by_hour = data.groupby('Hour')['Événement'].count()
+    accidents_by_hour = nearby_data.groupby('Hour')['Événement'].count()
     total_accidents = accidents_by_hour.sum()
     
     # Probabilité d'accident à l'heure donnée (par rapport aux heures précédentes)
@@ -149,91 +170,35 @@ def calculate_accident_probability_for_date_and_condition(date_input, condition_
 
     # Calcul de la probabilité globale d'accident
     prob_accident = prob_conditions * prob_hour
+
+    ci_lower, ci_upper = confidence_interval(prob_accident, len(nearby_data))
     
     # Probabilités de gravité en cas d'accident
-    prob_gravity_light = data["Impact_léger_1"].mean() if not data.empty else 0.2
-    prob_gravity_severe = data["Impact_grave_1"].mean() if not data.empty else 0.1
-    prob_gravity_fatal = data["Impact_mortel_1"].mean() if not data.empty else 0.05
+    prob_gravity_light = data["Impact_léger_1"].mean() if not data.empty else 0.078
+    prob_gravity_severe = data["Impact_grave_1"].mean() if not data.empty else 0.021
+    prob_gravity_fatal = data["Impact_mortel_1"].mean() if not data.empty else 0.005
     
     # Probabilités pour le deuxième type d'impact
-    prob_gravity_light_2 = data["Impact_léger_2"].mean() if not data.empty else 0.2
-    prob_gravity_severe_2 = data["Impact_grave_2"].mean() if not data.empty else 0.1
-    prob_gravity_fatal_2 = data["Impact_mortel_2"].mean() if not data.empty else 0.05
+    prob_gravity_light_2 = data["Impact_léger_2"].mean() if not data.empty else 0.13
+    prob_gravity_severe_2 = data["Impact_grave_2"].mean() if not data.empty else 0.0016
+    prob_gravity_fatal_2 = data["Impact_mortel_2"].mean() if not data.empty else 0.0005
 
-    return prob_accident, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2
+    return prob_accident, ci_lower, ci_upper, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2
 
 # Exemple d'utilisation
 date_input = 1733472000 # (timestamp)
 condition_input = 3  # Par exemple, condition "eau"
-prob_accident, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2 = calculate_accident_probability_for_date_and_condition(date_input, condition_input)
+latitude = 44.852616
+longitude = -0.568591
+prob_accident, ci_lower, ci_upper, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2 = calculate_accident_probability_for_date_and_condition(date_input, condition_input, latitude, longitude)
 
-print(f"Probabilité d'accident: {prob_accident:.4f}")
+print(f"Probabilité d'accident: {prob_accident:.4f} (95% CI: [{ci_lower:.4f}, {ci_upper:.4f}])")
 print(f"Probabilité de gravité légère (impact 1): {prob_gravity_light:.4f}")
 print(f"Probabilité de gravité sévère (impact 1): {prob_gravity_severe:.4f}")
 print(f"Probabilité de gravité mortelle (impact 1): {prob_gravity_fatal:.4f}")
 print(f"Probabilité de gravité légère (impact 2): {prob_gravity_light_2:.4f}")
 print(f"Probabilité de gravité sévère (impact 2): {prob_gravity_severe_2:.4f}")
 print(f"Probabilité de gravité mortelle (impact 2): {prob_gravity_fatal_2:.4f}")
-
-
-
-
-
-
-
-######## Marche mais valeur fixe à des endroits #########
-
-
-# # Distribution des conditions
-# conditions_dist = data["Conditions"].value_counts(normalize=True)
-# # Distribution des vitesses
-# vitesse_dist = data["Vitesse"].value_counts(normalize=True)
-# # Distribution des impacts
-# impact_leger1_dist = data["Impact_léger_1"].value_counts(normalize=True)
-# impact_grave1_dist = data["Impact_grave_1"].value_counts(normalize=True)
-# impact_mortel1_dist = data["Impact_mortel_1"].value_counts(normalize=True)
-# impact_leger2_dist = data["Impact_léger_2"].value_counts(normalize=True)
-# impact_grave2_dist = data["Impact_grave_2"].value_counts(normalize=True)
-# impact_mortel2_dist = data["Impact_mortel_2"].value_counts(normalize=True)
-
-# # Fonction de calcul de probabilité d'accident en fonction de la condition et de la date
-# def calculate_accident_probability_for_date_and_condition(date_input, condition_input):
-#     # Calcul de probabilité basée sur la condition
-#     prob_conditions = conditions_dist.get(condition_input, 0.01)
-    
-#     # Estimer la probabilité d'accident en fonction de la date (si c'est pertinent, sinon on met une probabilité fixe)
-#     # Pour l'instant, on ne fait rien avec la date ici car tu veux que la condition ait plus de poids
-#     prob_date = 0.05  # Ce peut être une probabilité de base pour la date (à ajuster selon le cas)
-
-#     # Calculer la probabilité d'accident globale
-#     prob_accident = prob_conditions * prob_date
-
-#     # Probabilités de gravité en cas d'accident
-#     prob_gravité_leger_1 = 0.1  # 10% de probabilité d'impact léger si accident
-#     prob_gravité_grave_1 = 0.2   # 20% de probabilité d'impact grave
-#     prob_gravité_mortel_1 = 0.05  # 5% de probabilité d'impact mortel
-
-#     prob_gravité_leger_2 = 0.1
-#     prob_gravité_grave_2 = 0.2
-#     prob_gravité_mortel_2 = 0.05
-
-#     # Retourner les probabilités
-#     return prob_accident, prob_gravité_leger_1, prob_gravité_grave_1, prob_gravité_mortel_1, prob_gravité_leger_2, prob_gravité_grave_2, prob_gravité_mortel_2
-
-# # Exemple d'utilisation : 
-# date_input = "2024-12-06"  # Remplacer par la date entrée par l'utilisateur
-# condition_input = 3  # Condition entre 0 et 6
-
-# prob_accident, prob_gravité_leger_1, prob_gravité_grave_1, prob_gravité_mortel_1, prob_gravité_leger_2, prob_gravité_grave_2, prob_gravité_mortel_2 = calculate_accident_probability_for_date_and_condition(date_input, condition_input)
-
-# # Afficher les résultats
-# print(f"Probabilité d'accident: {prob_accident:.4f}")
-# print(f"Probabilité d'impact léger (1): {prob_gravité_leger_1:.4f}")
-# print(f"Probabilité d'impact grave (1): {prob_gravité_grave_1:.4f}")
-# print(f"Probabilité d'impact mortel (1): {prob_gravité_mortel_1:.4f}")
-# print(f"Probabilité d'impact léger (2): {prob_gravité_leger_2:.4f}")
-# print(f"Probabilité d'impact grave (2): {prob_gravité_grave_2:.4f}")
-# print(f"Probabilité d'impact mortel (2): {prob_gravité_mortel_2:.4f}")
 
 
 
