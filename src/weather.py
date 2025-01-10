@@ -1,4 +1,7 @@
+from datetime import datetime
 import requests
+from datetime import datetime, timedelta
+
 
 class WeatherAPIcurrent:
     """ Class for fetching weather data from OpenWeatherMap API. """
@@ -33,4 +36,32 @@ class WeatherAPIcurrent:
         except requests.exceptions.RequestException as e:
             print(f"Error fetching weather data: {e}")
             return None
+
+
+
+    def get_forecast_at_datetime(self, lat, lon, target_date):
+        url = "https://api.openweathermap.org/data/2.5/forecast"
+        params = {
+            "lat": lat,
+            "lon": lon,
+            "appid": self.api_key,
+            "units": "metric"
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        forecast_data = response.json()
+        
+        #On vérifie d'abord que la date demandée n'est pas dans plus de 5 jours
+        if(target_date > datetime.now() + timedelta(days=5)):
+            return "La date demandée est trop éloignée"
+        
+
+        # Filtrer par date et heure dans un intervale de 3h
+        for forecast in forecast_data.get("list", []):
+             forecast_datetime = datetime.strptime(forecast["dt_txt"], "%Y-%m-%d %H:%M:%S")
+             if  forecast_datetime < target_date < (forecast_datetime + timedelta(hours=3)):
+                 return forecast
+
+        return None  # Si aucune correspondance n'est trouvée
+
 
