@@ -11,8 +11,6 @@ from math import radians, cos, sin, sqrt, atan2
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data.translatorDictionnaryKeolis import data
 
-middle_tram_speed = 30
-
 # Fonction pour calculer la distance entre deux points géographiques (haversine)
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371  # Rayon moyen de la Terre en km
@@ -33,6 +31,7 @@ def confidence_interval(p, n, confidence=0.95):
     return (lower, upper)
 
 def create_complete_data_csv(): 
+    middle_tram_speed = 30
 
     date = []
     latitude = []
@@ -143,16 +142,15 @@ def prepare_data():
 
     return data
 
-# Charger les données
-data = prepare_data()
-
-# Distribution des conditions
-conditions_dist = data["Conditions"].value_counts(normalize=True)
-# Extraire l'heure des incidents
-data['Hour'] = pd.to_datetime(data['Date'], unit='s').dt.hour
-
 # Fonction pour calculer la probabilité d'accident basée sur la condition et l'heure
 def calculate_accident_probability_for_date_and_condition(date_input, condition_input, lat, lon):
+    # Charger les données
+    data = prepare_data()
+
+    # Distribution des conditions
+    conditions_dist = data["Conditions"].value_counts(normalize=True)
+    # Extraire l'heure des incidents
+    data['Hour'] = pd.to_datetime(data['Date'], unit='s').dt.hour
     nearby_data = data[data.apply(lambda row: haversine(row['Latitude'], row['Longitude'], lat, lon) <= 1, axis=1)]
 
     # Calcul de probabilité basée sur la condition
@@ -174,13 +172,13 @@ def calculate_accident_probability_for_date_and_condition(date_input, condition_
     ci_lower, ci_upper = confidence_interval(prob_accident, len(nearby_data))
     
     # Probabilités de gravité en cas d'accident
-    prob_gravity_light = data["Impact_léger_1"].mean() if not data.empty else 0.078
-    prob_gravity_severe = data["Impact_grave_1"].mean() if not data.empty else 0.021
+    prob_gravity_light = data["Impact_léger_1"].mean() if not data.empty else 0.07
+    prob_gravity_severe = data["Impact_grave_1"].mean() if not data.empty else 0.02
     prob_gravity_fatal = data["Impact_mortel_1"].mean() if not data.empty else 0.005
     
     # Probabilités pour le deuxième type d'impact
-    prob_gravity_light_2 = data["Impact_léger_2"].mean() if not data.empty else 0.13
-    prob_gravity_severe_2 = data["Impact_grave_2"].mean() if not data.empty else 0.0016
+    prob_gravity_light_2 = data["Impact_léger_2"].mean() if not data.empty else 0.1
+    prob_gravity_severe_2 = data["Impact_grave_2"].mean() if not data.empty else 0.001
     prob_gravity_fatal_2 = data["Impact_mortel_2"].mean() if not data.empty else 0.0005
 
     return prob_accident, ci_lower, ci_upper, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2
