@@ -2,6 +2,7 @@ from datetime import date, datetime
 from weather import WeatherAPIcurrent
 from dotenv import load_dotenv
 import os
+#from flask import Flask, render_template, request
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
@@ -18,3 +19,13 @@ print(meteo_date['main']['temp'])
 print(meteo_date['rain']['3h'])
 print(meteo_date['wind']['speed'])
 
+
+#app = Flask(__name__)
+
+# @app.route('/data', methods=['POST'])
+# def get_data():
+#     data = request.get_json()
+#     latitude = data['latitude']
+#     longitude = data['longitude']
+#     date = data['date']
+#     print(latitude)
