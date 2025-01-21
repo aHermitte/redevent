@@ -143,7 +143,7 @@ def prepare_data():
     return data
 
 # Fonction pour calculer la probabilité d'accident basée sur la condition et l'heure
-def calculate_accident_probability_for_date_and_condition(date_input, condition_input, lat, lon):
+def calculate_accident_probability_for_date_and_condition(date_input, condition_input, lat, lon, confidence = 0.95):
     # Charger les données
     data = prepare_data()
 
@@ -169,7 +169,7 @@ def calculate_accident_probability_for_date_and_condition(date_input, condition_
     # Calcul de la probabilité globale d'accident
     prob_accident = prob_conditions * prob_hour
 
-    ci_lower, ci_upper = confidence_interval(prob_accident, len(nearby_data))
+    ci_lower, ci_upper = confidence_interval(prob_accident, len(nearby_data), confidence)
     
     # Probabilités de gravité en cas d'accident
     prob_gravity_light = data["Impact_léger_1"].mean() if not data.empty else 0.07

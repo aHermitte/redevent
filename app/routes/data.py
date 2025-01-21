@@ -21,6 +21,7 @@ def return_model_predictions(input):
     inputLon = input.get("position").get("longitude")
     inputTime = input.get("time")
     inputDate = input.get("date")
+    inputConf = input.get("confidence")
 
     # Fusionner la date et l'heure en un objet datetime
     datetime_obj = datetime.strptime(f"{inputDate} {inputTime}", "%Y-%m-%d %H:%M")
@@ -29,7 +30,7 @@ def return_model_predictions(input):
     timestamp = datetime_obj.timestamp()
 
     print(input)
-    prob_accident, ci_lower, ci_upper, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2 = calculate_accident_probability_for_date_and_condition(timestamp, 3, inputLat, inputLon)
+    prob_accident, ci_lower, ci_upper, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2 = calculate_accident_probability_for_date_and_condition(timestamp, 3, inputLat, inputLon, inputConf)
     # Replace this with actual model
     result = jsonify({
         "input": [{
@@ -37,6 +38,7 @@ def return_model_predictions(input):
             "longitude": inputLon,
             "date": inputDate,
             "time": inputTime,
+            "confidence": inputConf,
             }],
         "proba": [{
             "prob_accident": prob_accident,
