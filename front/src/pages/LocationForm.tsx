@@ -1,4 +1,4 @@
-import { Button, Grid2, Typography } from "@mui/material";
+import { Button, Grid2, TextField, Typography } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { TimePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -13,6 +13,7 @@ const LocationForm = () => {
   const [date, setDate] = useState<Dayjs | null>(null);
   const [time, setTime] = useState<Dayjs | null>(null);
   const [incidents, setIncidents] = useState<any>([]);
+  const [confidence, setConfidence] = useState<number>(95);
 
   const sendDatatoBack = async (
     position: LatLng,
@@ -26,6 +27,7 @@ const LocationForm = () => {
       },
       date: date?.format("YYYY-MM-DD"),
       time: time?.format("HH:mm"),
+      confidence: confidence / 100,
     };
     try {
       console.log(data);
@@ -35,12 +37,12 @@ const LocationForm = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-        // TODO: Use and display received data
       });
 
       if (response.ok) {
-        alert("Data sent successfully");
+        console.log("Data sent successfully");
         response.json().then((data) => {
+          console.log("Data received");
           console.log(data);
           handleResult(data);
           setIncidents(data.incidents);
@@ -57,8 +59,10 @@ const LocationForm = () => {
   const handleResult = async (result: any) => {
     document.getElementById("time_result")!.innerText = result.input[0].time;
     document.getElementById("date_result")!.innerText = result.input[0].date;
-    document.getElementById("position_result")!.innerText = `Latitude: ${result.input[0].latitude}, Longitude: ${result.input[0].longitude}`;
-    document.getElementById("probability_result")!.innerText = result.proba[0].prob_accident;
+    document.getElementById("position_result")!.innerText =
+      `Latitude: ${result.input[0].latitude}, Longitude: ${result.input[0].longitude}`;
+    document.getElementById("probability_result")!.innerText =
+      result.proba[0].prob_accident;
   };
 
   return (
@@ -70,15 +74,25 @@ const LocationForm = () => {
         <Grid2>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              label="Basic date picker"
+              label="Select date"
               value={date}
               onChange={(newDate) => setDate(newDate)}
             />
             <TimePicker
-              label="Basic time picker"
+              label="Select time"
               ampm={false}
               value={time}
               onChange={(newTime) => setTime(newTime)}
+            />
+            <TextField
+              name="confidence"
+              label="Confidence index"
+              value={confidence}
+              onChange={(event) => setConfidence(Number(event.target.value))}
+              InputProps={{
+                type: "number",
+              }}
+              variant="outlined"
             />
           </LocalizationProvider>
         </Grid2>
@@ -91,7 +105,7 @@ const LocationForm = () => {
               sendDatatoBack(position, date, time);
             }}
           >
-            Send data to back
+            Compute probability
           </Button>
         </Grid2>
       </Grid2>
@@ -103,7 +117,6 @@ const LocationForm = () => {
         <p id="position_result"></p>
         <Typography variant="h5">Probability</Typography>
         <p id="probability_result"></p>
-
       </Grid2>
     </Grid2>
   );
