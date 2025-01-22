@@ -4,7 +4,7 @@ import sys
 import os
 from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/')))
-from formalPredict import calculate_accident_probability_for_date_and_condition
+from formalPredict import calculate_accident_probability_normal
 
 data_bp = Blueprint('data', __name__)
 
@@ -22,6 +22,7 @@ def return_model_predictions(input):
     inputTime = input.get("time")
     inputDate = input.get("date")
     inputConf = input.get("confidence")
+    meteo = 3 # "EAU"
 
     # Fusionner la date et l'heure en un objet datetime
     datetime_obj = datetime.strptime(f"{inputDate} {inputTime}", "%Y-%m-%d %H:%M")
@@ -30,8 +31,8 @@ def return_model_predictions(input):
     timestamp = datetime_obj.timestamp()
 
     print(input)
-    prob_accident, ci_lower, ci_upper, prob_gravity_light, prob_gravity_severe, prob_gravity_fatal, prob_gravity_light_2, prob_gravity_severe_2, prob_gravity_fatal_2 = calculate_accident_probability_for_date_and_condition(timestamp, 3, inputLat, inputLon, inputConf)
-    # Replace this with actual model
+    prob_accident, ci_lower, ci_upper = calculate_accident_probability_normal(timestamp, meteo, inputLat, inputLon, inputConf)
+
     result = jsonify({
         "input": [{
             "latitude": inputLat, 
@@ -44,12 +45,6 @@ def return_model_predictions(input):
             "prob_accident": prob_accident,
             "ci_lower": ci_lower,
             "ci_upper": ci_upper,
-            "prob_gravity_light_int": prob_gravity_light, 
-            "prob_gravity_severe_int": prob_gravity_severe, 
-            "prob_gravity_fatal_int": prob_gravity_fatal, 
-            "prob_gravity_light_ext": prob_gravity_light_2, 
-            "prob_gravity_severe_ext": prob_gravity_severe_2, 
-            "prob_gravity_fatal_ext": prob_gravity_fatal_2,
             }]
         })
     return result
