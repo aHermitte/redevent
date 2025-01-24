@@ -39,22 +39,30 @@ const Map = ({ onPositionChange, history, onHistorySelect}: MapProps) => {
     );
   };
 
+  const isEmptyObject = (obj: object): boolean => {
+    return Object.keys(obj).length === 0;
+};
+
   const MarkedPositions = ({ history }: { history: any[] }) => {
-    const mp = history || []; // Default to an empty array if null or undefined
-    console.log(mp);
+    const h = history || []; // Default to an empty array if null or undefined
+    console.log(h);
 
     // Generate markers and render them as part of the component
     return (
       <>
-        {mp.map((incident, index) =>{
-          console.log(incident.input[0])
-          const pos = new LatLng(incident.input[0].latitude, incident.input[0].longitude);
+        {h.map((incident, index) =>{
+          if (isEmptyObject(incident)) return;
+          console.log("position: " + incident.position)
+
+          const lat = parseFloat(incident.position.split(',')[0]);
+          const lon = parseFloat(incident.position.split(',')[1]);
+          const pos = new LatLng(lat, lon);
           return (
             <Marker position={pos} key={index} icon={greenIcon} eventHandlers={{click: () => {
               console.log("Diplaying result: ", incident)
               onHistorySelect(incident)
               },}}>
-              <Popup>{incident.proba[0].prob_accident}</Popup>
+              <Popup>{"Click to see more"}</Popup>
             </Marker>
           );
         })}

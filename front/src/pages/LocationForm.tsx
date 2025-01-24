@@ -39,6 +39,12 @@ const LocationForm = () => {
     position?: string;
     probability?: string;
   }>({});
+  const [resultsHistory, setResultsHistory] = useState<{
+    date?: string;
+    time?: string;
+    position?: string;
+    probability?: string;
+  }[]>([{}]);
   const [forecastResults, setForecastResults] = useState<ForecastResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({
@@ -136,6 +142,7 @@ const LocationForm = () => {
           position: `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`,
           probability: first.probability,
         });
+        setResultsHistory((prevResultsHistory) => [...prevResultsHistory, results]);
       }
 
       setForecastResults(validPredictions);
@@ -247,8 +254,8 @@ const LocationForm = () => {
               </Typography>
               <Map
                 onPositionChange={setPosition}
-                history={[]}
-                onHistorySelect={() => console.log("todo")}
+                history={resultsHistory}
+                onHistorySelect={setResults}
               />
 
               <Button
