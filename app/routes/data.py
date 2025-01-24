@@ -27,11 +27,12 @@ def return_model_predictions(input):
     load_dotenv()
     api_key = os.getenv("API_KEY")
     weatherApp = WeatherAPIcurrent(api_key)
-    meteo = weatherApp.get_weather_conditions(inputLat, inputLon, inputDate)
+    meteo = weatherApp.get_weather_conditions(inputLat, inputLon, inputDate+" "+inputTime+":00")
 
     # Fusionner la date et l'heure en un objet datetime
     datetime_obj = datetime.strptime(f"{inputDate} {inputTime}", "%Y-%m-%d %H:%M")
 
+    
     # Convertir l'objet datetime en timestamp (en secondes)
     timestamp = datetime_obj.timestamp()
 
