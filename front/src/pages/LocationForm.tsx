@@ -21,7 +21,7 @@ const LocationForm = () => {
   const [position, setPosition] = useState(new LatLng(51.505, -0.09));
   const [date, setDate] = useState<Dayjs | null>(null);
   const [time, setTime] = useState<Dayjs | null>(null);
-  const [incidents, setIncidents] = useState<any[]>([]);
+  const [resultsHistory, setResultsHistory] = useState<any[]>([]);
   const [confidence, setConfidence] = useState<number>(95);
 
   const [errors, setErrors] = useState({
@@ -83,7 +83,8 @@ const LocationForm = () => {
           console.log("Data received");
           console.log(data);
           handleResult(data);
-          setIncidents(data.incidents);
+          // Add result to the history
+          setResultsHistory((prevResultsHistory) => [...prevResultsHistory, data])
         });
       } else {
         const errMsg = await response.text();
@@ -179,7 +180,7 @@ const LocationForm = () => {
         <Typography variant="h5" sx={{ mt: 2 }}>
           Map
         </Typography>
-        <Map onPositionChange={setPosition} markedPositions={[]} />
+        <Map onPositionChange={setPosition} history={resultsHistory} onHistorySelect={handleResult}/>
         <Button variant="contained" onClick={handleSubmit} sx={{ mt: 2 }}>
           Compute probability
         </Button>
