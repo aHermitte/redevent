@@ -48,10 +48,10 @@ class WeatherAPIcurrent:
             "units": "metric"
         }
         response = requests.get(url, params=params)
-        response.raise_for_status()
         forecast_data = response.json()
         
         #On vérifie d'abord que la date demandée n'est pas dans plus de 5 jours
+        target_date = datetime.strptime(target_date, "%Y-%m-%d %H:%M:%S")
         if(target_date > datetime.now() + timedelta(days=5)):
             return "La date demandée est trop éloignée"
         
@@ -59,9 +59,35 @@ class WeatherAPIcurrent:
         # Filtrer par date et heure dans un intervale de 3h
         for forecast in forecast_data.get("list", []):
              forecast_datetime = datetime.strptime(forecast["dt_txt"], "%Y-%m-%d %H:%M:%S")
-             if  forecast_datetime < target_date < (forecast_datetime + timedelta(hours=3)):
+             if  forecast_datetime <= target_date < (forecast_datetime + timedelta(hours=3)):
                  return forecast
 
         return None  # Si aucune correspondance n'est trouvée
+    
+    
+    def get_weather_conditions(self, lat, lon, target_date):
+        good_data = self.get_forecast_at_datetime(lat, lon, target_date)
+        target_date = datetime.strptime(target_date, "%Y-%m-%d %H:%M:%S")
+        hour = target_date.hour
+        
+        if good_data is None:
+            return 1 # Normal
+        
+        weather_conditions = good_data.get("weather", [])[0].get("main", "")
+        if("Rain" in weather_conditions):
+            if hour >= 22 or hour <= 6:
+                return 5 #Nuit + Eau
+            return 3 #Eau
+        else :
+            if hour >= 22 or hour <= 6:
+                return 4 #Nuit
+            return 1 #Normal
+            
+ 
 
+
+    
+weatherApp = WeatherAPIcurrent("2f65fd77ee3b89584533fbfd3cdf468b")
+print(weatherApp.get_forecast_at_datetime(44.8, -0.6, "2025-01-22 12:00:00"))
+print(weatherApp.get_weather_conditions(44.8, -0.6, "2025-01-22 12:00:00"))
 

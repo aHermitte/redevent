@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/')))
 from formalPredict import calculate_accident_probability_normal
+from dotenv import load_dotenv
+from weather import WeatherAPIcurrent
 
 data_bp = Blueprint('data', __name__)
 
@@ -22,7 +24,10 @@ def return_model_predictions(input):
     inputTime = input.get("time")
     inputDate = input.get("date")
     inputConf = input.get("confidence")
-    meteo = 3 # "EAU"
+    load_dotenv()
+    api_key = os.getenv("API_KEY")
+    weatherApp = WeatherAPIcurrent(api_key)
+    meteo = weatherApp.get_weather_conditions(inputLat, inputLon, inputDate)
 
     # Fusionner la date et l'heure en un objet datetime
     datetime_obj = datetime.strptime(f"{inputDate} {inputTime}", "%Y-%m-%d %H:%M")
