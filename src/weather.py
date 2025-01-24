@@ -83,11 +83,3 @@ class WeatherAPIcurrent:
                 return 4 #Nuit
             return 1 #Normal
             
- 
-
-
-    
-weatherApp = WeatherAPIcurrent("2f65fd77ee3b89584533fbfd3cdf468b")
-print(weatherApp.get_forecast_at_datetime(44.8, -0.6, "2025-01-22 12:00:00"))
-print(weatherApp.get_weather_conditions(44.8, -0.6, "2025-01-22 12:00:00"))
-
