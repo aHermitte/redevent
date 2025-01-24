@@ -245,7 +245,11 @@ const LocationForm = () => {
               <Typography variant="h6" sx={{ mt: 3, mb: 2, fontWeight: 500 }}>
                 Select Location on Map
               </Typography>
-              <Map onPositionChange={setPosition} markedPositions={[]} />
+              <Map
+                onPositionChange={setPosition}
+                history={[]}
+                onHistorySelect={() => console.log("todo")}
+              />
 
               <Button
                 variant="contained"
