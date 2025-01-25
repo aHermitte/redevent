@@ -21,7 +21,7 @@ import { Dayjs } from "dayjs";
 import { LatLng } from "leaflet";
 
 interface ForecastResult {
-  date: string;
+  time: string;
   probability: string;
   riskLevel: "low" | "medium" | "high";
   ciLower: string;
@@ -39,12 +39,14 @@ const LocationForm = () => {
     position?: string;
     probability?: string;
   }>({});
-  const [resultsHistory, setResultsHistory] = useState<{
-    date?: string;
-    time?: string;
-    position?: string;
-    probability?: string;
-  }[]>([{}]);
+  const [resultsHistory, setResultsHistory] = useState<
+    {
+      date?: string;
+      time?: string;
+      position?: string;
+      probability?: string;
+    }[]
+  >([{}]);
   const [forecastResults, setForecastResults] = useState<ForecastResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({
@@ -82,19 +84,19 @@ const LocationForm = () => {
   };
 
   const getRiskLevel = (probability: number) => {
-    if (probability < 0.0001) return "low"; // < 0.01%
-    if (probability < 0.001) return "medium"; // < 0.1%
-    return "high"; // >= 0.1%
+    if (probability < 0.0001) return "low";
+    if (probability < 0.001) return "medium";
+    return "high";
   };
 
-  const fetchPrediction = async (date: Dayjs, time: Dayjs) => {
+  const fetchPrediction = async (datetime: Dayjs) => {
     const data = {
       position: {
         latitude: position.lat,
         longitude: position.lng,
       },
-      date: date.format("YYYY-MM-DD"),
-      time: time.format("HH:mm"),
+      date: datetime.format("YYYY-MM-DD"),
+      time: datetime.format("HH:mm"),
       confidence: confidence / 100,
     };
 
@@ -109,7 +111,7 @@ const LocationForm = () => {
         const resultData = await response.json();
         const prob = resultData.proba[0].prob_accident;
         return {
-          date: date.format("MMM D"),
+          time: datetime.format("HH:mm"),
           probability: formatProbability(prob),
           riskLevel: getRiskLevel(prob),
           ciLower: formatProbability(resultData.proba[0].ci_lower),
@@ -128,21 +130,34 @@ const LocationForm = () => {
     setLoading(true);
 
     try {
-      const dates = Array.from({ length: 5 }, (_, i) => date.add(i, "day"));
+      // Create base datetime from selected date and time
+      const baseDateTime = date
+        .hour(time.hour())
+        .minute(time.minute())
+        .second(0);
+
+      // Generate 24 hourly slots starting from base datetime
       const predictions = await Promise.all(
-        dates.map((d) => fetchPrediction(d, time))
+        Array.from({ length: 24 }, (_, i) =>
+          fetchPrediction(baseDateTime.add(i, "hour"))
+        )
       );
+
       const validPredictions = predictions.filter(Boolean) as ForecastResult[];
 
       if (validPredictions.length > 0) {
-        const [first] = validPredictions;
-        setResults({
-          date: date.format("ddd, MMM D, YYYY"),
-          time: time.format("HH:mm"),
-          position: `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`,
-          probability: first.probability,
-        });
-        setResultsHistory((prevResultsHistory) => [...prevResultsHistory, results]);
+        const currentPrediction = validPredictions.find(
+          (p) => p.time === time.format("HH:mm")
+        );
+
+        if (currentPrediction) {
+          setResults({
+            date: date.format("ddd, MMM D, YYYY"),
+            time: time.format("HH:mm"),
+            position: `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`,
+            probability: currentPrediction.probability,
+          });
+        }
       }
 
       setForecastResults(validPredictions);
@@ -160,7 +175,7 @@ const LocationForm = () => {
     ciLower: string;
     ciUpper: string;
   }) => {
-    const maxValue = 0.001; // 0.1% for full scale
+    const maxValue = 0.001;
     const upperValue = parseFloat(ciUpper.replace("%", ""));
     const scaledValue = (upperValue / maxValue) * 100;
 
@@ -224,6 +239,7 @@ const LocationForm = () => {
                       label="Select Time"
                       value={time}
                       onChange={setTime}
+                      ampm={false}
                       slotProps={{
                         textField: {
                           fullWidth: true,
@@ -301,61 +317,67 @@ const LocationForm = () => {
           </Card>
         </Grid>
 
-        {/* 5-Day Forecast */}
+        {/* 24-Hour Forecast */}
         <Grid item xs={12}>
           <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2 }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-                5-Day Risk Forecast
+                24-Hour Risk Forecast
               </Typography>
 
-              <Grid container spacing={2}>
-                {forecastResults.map(
-                  ({ date, probability, riskLevel, ciLower, ciUpper }) => (
-                    <Grid item xs={12} sm={6} md={4} lg={2.4} key={date}>
-                      <Card
-                        sx={{
-                          borderRadius: 2,
-                          borderLeft: (theme) =>
-                            `4px solid ${
-                              riskLevel === "high"
-                                ? theme.palette.error.main
-                                : riskLevel === "medium"
-                                ? theme.palette.warning.main
-                                : theme.palette.success.main
-                            }`,
-                        }}
+              <Box sx={{ overflowX: "auto", pb: 2 }}>
+                <Grid container spacing={2} sx={{ flexWrap: "nowrap" }}>
+                  {forecastResults.map(
+                    ({ time, probability, riskLevel, ciLower, ciUpper }) => (
+                      <Grid
+                        item
+                        key={time}
+                        sx={{ minWidth: 200, flexShrink: 0 }}
                       >
-                        <CardContent>
-                          <Typography variant="subtitle1" fontWeight={500}>
-                            {date}
-                          </Typography>
-                          <Chip
-                            label={probability}
-                            size="small"
-                            sx={{
-                              bgcolor: (theme) =>
+                        <Card
+                          sx={{
+                            borderRadius: 2,
+                            borderLeft: (theme) =>
+                              `4px solid ${
                                 riskLevel === "high"
-                                  ? theme.palette.error.light
+                                  ? theme.palette.error.main
                                   : riskLevel === "medium"
-                                  ? theme.palette.warning.light
-                                  : theme.palette.success.light,
-                              color: "common.white",
-                              mt: 1,
-                              fontWeight: 600,
-                            }}
-                          />
-                          <RiskIndicator
-                            level={riskLevel}
-                            ciLower={ciLower}
-                            ciUpper={ciUpper}
-                          />
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  )
-                )}
-              </Grid>
+                                  ? theme.palette.warning.main
+                                  : theme.palette.success.main
+                              }`,
+                          }}
+                        >
+                          <CardContent>
+                            <Typography variant="subtitle1" fontWeight={500}>
+                              {time}
+                            </Typography>
+                            <Chip
+                              label={probability}
+                              size="small"
+                              sx={{
+                                bgcolor: (theme) =>
+                                  riskLevel === "high"
+                                    ? theme.palette.error.light
+                                    : riskLevel === "medium"
+                                    ? theme.palette.warning.light
+                                    : theme.palette.success.light,
+                                color: "common.white",
+                                mt: 1,
+                                fontWeight: 600,
+                              }}
+                            />
+                            <RiskIndicator
+                              level={riskLevel}
+                              ciLower={ciLower}
+                              ciUpper={ciUpper}
+                            />
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    )
+                  )}
+                </Grid>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
