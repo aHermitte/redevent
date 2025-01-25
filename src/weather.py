@@ -53,7 +53,7 @@ class WeatherAPIcurrent:
         #On vérifie d'abord que la date demandée n'est pas dans plus de 5 jours
         target_date = datetime.strptime(target_date, "%Y-%m-%d %H:%M:%S")
         if(target_date > datetime.now() + timedelta(days=5)):
-            return "La date demandée est trop éloignée"
+            return None
         
 
         # Filtrer par date et heure dans un intervale de 3h
@@ -71,7 +71,10 @@ class WeatherAPIcurrent:
         hour = target_date.hour
         
         if good_data is None:
-            return 1 # Normal
+            if hour >= 22 or hour <= 6:
+                return 4 #Nuit
+        else :
+            return 1 #Normal
         
         weather_conditions = good_data.get("weather", [])[0].get("main", "")
         if("Rain" in weather_conditions):
