@@ -45,14 +45,11 @@ const Map = ({ onPositionChange, history, onHistorySelect}: MapProps) => {
 
   const MarkedPositions = ({ history }: { history: any[] }) => {
     const h = history || []; // Default to an empty array if null or undefined
-    console.log(h);
-
     // Generate markers and render them as part of the component
     return (
       <>
         {h.map((incident, index) =>{
           if (isEmptyObject(incident)) return;
-          console.log("position: " + incident.position)
 
           const lat = parseFloat(incident.position.split(',')[0]);
           const lon = parseFloat(incident.position.split(',')[1]);

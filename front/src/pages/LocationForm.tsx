@@ -46,7 +46,7 @@ const LocationForm = () => {
       position?: string;
       probability?: string;
     }[]
-  >([{}]);
+  >([]);
   const [forecastResults, setForecastResults] = useState<ForecastResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({
@@ -151,12 +151,14 @@ const LocationForm = () => {
         );
 
         if (currentPrediction) {
-          setResults({
+          const newResults = {
             date: date.format("ddd, MMM D, YYYY"),
             time: time.format("HH:mm"),
             position: `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`,
             probability: currentPrediction.probability,
-          });
+          }
+          setResults(newResults);
+          setResultsHistory((old) => [...old, newResults]);
         }
       }
 
