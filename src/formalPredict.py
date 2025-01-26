@@ -55,22 +55,35 @@ def prepare_data():
     columns = ["Date", "Latitude", "Longitude", "Événement", "Conditions"]
     return pd.DataFrame(matrix, columns=columns)
 
-def calculate_accident_probability_normal(date_input, condition_input, lat, lon, confidence = 0.95):
+def calculate_accident_probability_normal(date_input, condition_input, lat, lon, confidence=0.95):
     data = prepare_data()
     data['Hour'] = pd.to_datetime(data['Date'], unit='s').dt.hour
-    
-    nearby_data = data[data.apply(lambda row: haversine(row['Latitude'], row['Longitude'], lat, lon) <= 1, axis=1)]
-    
-    if nearby_data.empty:
+
+    hour_input = datetime.utcfromtimestamp(date_input).hour
+
+    # Filtrer les données par proximité (1 km), heure (±1h) et conditions météorologiques
+    filtered_data = data[
+        (data.apply(lambda row: haversine(row['Latitude'], row['Longitude'], lat, lon) <= 1, axis=1)) &
+        (data['Hour'].between(hour_input - 1, hour_input + 1)) &
+        (data['Conditions'] == condition_input)
+    ]
+
+    if filtered_data.empty:
         return 0.0000, 0.0000, 0.0000
-    
-    mean_accidents = nearby_data['Événement'].mean()
-    std_accidents = nearby_data['Événement'].std() if len(nearby_data) > 1 else 0
-    
-    prob_accident = round(stats.norm.cdf(1, loc=mean_accidents, scale=std_accidents), 6)
-    ci_lower, ci_upper = confidence_interval(prob_accident, len(nearby_data), confidence)
-    
+
+    mean_accidents = filtered_data['Événement'].mean()
+    std_accidents = filtered_data['Événement'].std() if len(filtered_data) > 1 else 0
+
+    # Gestion du cas où l'écart-type est nul
+    if std_accidents == 0:
+        prob_accident = mean_accidents / max(len(filtered_data), 1)
+    else:
+        prob_accident = round(stats.norm.cdf(1, loc=mean_accidents, scale=std_accidents), 6)
+
+    ci_lower, ci_upper = confidence_interval(prob_accident, len(filtered_data), confidence)
+
     return prob_accident, ci_lower, ci_upper
+
 
 # Exemple d'utilisation
 date_input = 1733472000
