@@ -4,7 +4,7 @@ import csv
 import sys
 import os
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timezone
 from scipy import stats
 from math import radians, cos, sin, sqrt, atan2
 
@@ -22,7 +22,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 # Ajout d'un intervalle de confiance
 def confidence_interval(p, n, confidence=0.95):
-    if n == 0:
+    if n == 0 or not (0 <= p <= 1):
         return (0, 0)
     se = np.sqrt(p * (1 - p) / n)
     z = stats.norm.ppf((1 + confidence) / 2)
@@ -31,7 +31,6 @@ def confidence_interval(p, n, confidence=0.95):
     return (lower, upper)
 
 def create_complete_data_csv():
-    middle_tram_speed = 30
     data_list = []
     
     with open('./data/Extrait_Keolis.csv') as csvfile:
@@ -59,7 +58,7 @@ def calculate_accident_probability_normal(date_input, condition_input, lat, lon,
     data = prepare_data()
     data['Hour'] = pd.to_datetime(data['Date'], unit='s').dt.hour
 
-    hour_input = datetime.utcfromtimestamp(date_input).hour
+    hour_input = datetime.fromtimestamp(date_input, timezone.utc).hour
 
     # Filtrer les données par proximité (1 km), heure (±1h) et conditions météorologiques
     filtered_data = data[
@@ -76,7 +75,7 @@ def calculate_accident_probability_normal(date_input, condition_input, lat, lon,
 
     # Gestion du cas où l'écart-type est nul
     if std_accidents == 0:
-        prob_accident = mean_accidents / max(len(filtered_data), 1)
+        prob_accident = 0 # mean_accidents / max(len(filtered_data), 1)
     else:
         prob_accident = round(stats.norm.cdf(1, loc=mean_accidents, scale=std_accidents), 6)
 
@@ -85,16 +84,52 @@ def calculate_accident_probability_normal(date_input, condition_input, lat, lon,
     return prob_accident, ci_lower, ci_upper
 
 
-# Exemple d'utilisation
-date_input = 1733472000
-condition_input = 3 # condition "eau"
-latitude = 44.794171
-longitude = -0.635021
-confidence = 0.95
-prob_accident, ci_lower, ci_upper = calculate_accident_probability_normal(date_input, condition_input, latitude, longitude, confidence)
+### Exemple d'utilisation ###
 
-print(f"Probabilité d'accident: {prob_accident:.4f} (95% CI: [{ci_lower:.4f}, {ci_upper:.4f}])")
+# date_input = 1733472000
+# condition_input = 3 # condition "eau"
+# latitude = 44.825764
+# longitude = -0.556264
+# confidence = 0.95
+# prob_accident, ci_lower, ci_upper = calculate_accident_probability_normal(date_input, condition_input, latitude, longitude, confidence)
+
+# print(f"Probabilité d'accident: {prob_accident:.4f} (95% CI: [{ci_lower:.4f}, {ci_upper:.4f}])")
 
 
 
+
+def plot_accident_probability(condition_input, lat, lon, confidence=0.95, date = 1733472000):
+    hours = np.arange(0, 24)
+    probabilities = []
+    ci_lowers = []
+    ci_uppers = []
+
+    base_date = datetime.fromtimestamp(date, timezone.utc)
+
+    for hour in hours:
+        date_input = base_date.replace(hour=hour, minute=0, second=0, microsecond=0).timestamp()
+        
+        prob, ci_lower, ci_upper = calculate_accident_probability_normal(date_input, condition_input, lat, lon, confidence)
+        probabilities.append(prob*100)
+        ci_lowers.append(ci_lower*100)
+        ci_uppers.append(ci_upper*100)
+
+    # Tracer la courbe
+    plt.figure(figsize=(10, 5))
+    plt.plot(hours, probabilities, label="Accident probability", color='b', marker='o', linestyle='-')
+    plt.fill_between(hours, ci_lowers, ci_uppers, color='b', alpha=0.2, label="Confidence interval (63%)")
+    
+    # Personnalisation du graphique
+    plt.xlabel("Hour of the day")
+    plt.ylabel("Accident probability (in %)")
+    plt.title(f"Probability of an accident during a day")
+    plt.xticks(hours)  # Afficher toutes les heures sur l'axe X
+    plt.grid(True, linestyle="--", alpha=0.7)
+    plt.legend()
+    
+    # Afficher le graphique
+    plt.show()
+
+
+# plot_accident_probability(0, 44.826041, -0.557350, 0.63)
 
