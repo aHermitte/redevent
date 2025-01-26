@@ -73,8 +73,8 @@ class WeatherAPIcurrent:
         if good_data is None:
             if hour >= 22 or hour <= 6:
                 return 4 #Nuit
-        else :
-            return 1 #Normal
+            else :
+                return 1 #Normal
         
         weather_conditions = good_data.get("weather", [])[0].get("main", "")
         if("Rain" in weather_conditions):
